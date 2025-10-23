@@ -1,0 +1,32 @@
+# Ignore build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ASP.NET environment-specific config
+appsettings.Development.json
+appsettings.Local.json
+
+# Logs and temporary files
+*.log
+*.tmp
+*.cache
+
+# Sensitive credentials
+secrets.json
+
+# OS-specific junk
+.DS_Store
+Thumbs.db

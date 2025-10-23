@@ -10,7 +10,17 @@
 # FRONTEND
 
 # BACKEND   
-    - Download .NET SDK https://dotnet.microsoft.com/en-us/download
+- Download .NET SDK https://dotnet.microsoft.com/en-us/download
+- ran dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer for RBAC token for secure frontend login
+- ran dotnet add package Microsoft.EntityFrameworkCore.Design
+- 
+
 
 # Database
-- 
+- Steps taken to create the database: 
+- ran dotnet new webapi -n MyApiProject to create backend
+- cd .\MyApiProject\
+- ran dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL
+- ran dotnet add package Microsoft.EntityFrameworkCore.Tools
+- ran dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
+- added .gitIgnore file
