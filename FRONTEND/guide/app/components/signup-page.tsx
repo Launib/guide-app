@@ -47,6 +47,11 @@ interface SignUpFormData {
   zipCode?: string;
   state?: string;
   city?: string;
+  // Business location information
+  businessAddress?: string;
+  businessCity?: string;
+  businessState?: string;
+  businessZip?: string;
 }
 
 export default function SignUpPage({
@@ -296,7 +301,6 @@ export default function SignUpPage({
               onChangeText={(text) => handleInputChange("businessName", text)}
               placeholderTextColor="#999"
             />
-
             <Text style={styles.label}>Business License *</Text>
             <TextInput
               style={styles.input}
@@ -305,6 +309,42 @@ export default function SignUpPage({
               onChangeText={(text) =>
                 handleInputChange("businessLicense", text)
               }
+              placeholderTextColor="#999"
+            />
+            <Text style={styles.sectionTitle}>Business Location</Text>
+            <Text style={styles.label}>Business Street Address *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter business address"
+              value={form.businessAddress || ""}
+              onChangeText={(text) =>
+                handleInputChange("businessAddress", text)
+              }
+              placeholderTextColor="#999"
+            />
+            <Text style={styles.label}>Business City *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter business city"
+              value={form.businessCity || ""}
+              onChangeText={(text) => handleInputChange("businessCity", text)}
+              placeholderTextColor="#999"
+            />
+            <Text style={styles.label}>Business State *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter business state"
+              value={form.businessState || ""}
+              onChangeText={(text) => handleInputChange("businessState", text)}
+              placeholderTextColor="#999"
+            />
+
+            <Text style={styles.label}>Business Zip Code *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter business Zip Code"
+              value={form.businessZip || ""}
+              onChangeText={(text) => handleInputChange("businessZip", text)}
               placeholderTextColor="#999"
             />
           </>
