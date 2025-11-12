@@ -1,24 +1,59 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import React, { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator } from "react-native";
+import { Stack } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Onboarding from "./components/onboarding";
+import AuthPage from "./components/auth-page";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      AsyncStorage.getItem("hasSeenOnboarding"),
+      AsyncStorage.getItem("userToken"),
+    ])
+      .then(([onboarded, userToken]) => {
+        if (!mounted) return;
+        setNeedsOnboarding(onboarded !== "true");
+        setIsAuthenticated(!!userToken);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setNeedsOnboarding(true);
+        setIsAuthenticated(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (needsOnboarding === null) {
+    // still loading flags; render a simple loading placeholder to avoid a blank screen
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+        <Text style={{ marginTop: 12, color: "#666" }}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (needsOnboarding) {
+    return <Onboarding onDone={() => setNeedsOnboarding(false)} />;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AuthPage
+        onAuthSuccess={() => {
+          // Reload the app state after successful auth
+          setIsAuthenticated(true);
+        }}
+      />
+    );
+  }
+
+  return <Stack />;
 }
