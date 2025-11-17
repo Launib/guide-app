@@ -49,6 +49,9 @@ export default function LoginPage({
       await AsyncStorage.setItem("userToken", form.username);
       Alert.alert("Success", "Logged in successfully");
 
+      //needed to add this for the app admin view:
+      await AsyncStorage.setItem("userRole","App Admin");
+
       // Trigger the success callback to navigate to main app
       onSuccess?.();
     } catch {

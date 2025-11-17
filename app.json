@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "378243b8-452a-4374-991a-3e83fb3152ea"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.hbuzle.guideapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
