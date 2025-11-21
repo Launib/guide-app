@@ -25,7 +25,7 @@ export default function LoginPage({
 }) {
   const [form, setForm] = useState<LoginFormData>({
     username: "",
-    password: ""
+    password: "",
   });
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
@@ -33,28 +33,61 @@ export default function LoginPage({
   };
 
   const handleSubmit = async () => {
-    if (
-      !form.username ||
-      !form.password
-    ) {
+    if (!form.username || !form.password) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
-
     try {
-      // TODO: Call login API with form data
-      console.log("Login form submitted:", form);
+      const payload = {
+        email: form.username,
+        password: form.password,
+      };
 
-      // For now, simulate successful login by storing a token
-      await AsyncStorage.setItem("userToken", form.username);
+      const API_BASE = "http://localhost:5162/api/auth";
+
+      const resp = await fetch(`${API_BASE}/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text();
+        console.error("Login failed:", resp.status, txt);
+        Alert.alert("Error", "Invalid credentials");
+        return;
+      }
+
+      const data = await resp.json();
+      const token = data.token;
+      if (!token) {
+        Alert.alert("Error", "Login failed: no token returned");
+        return;
+      }
+
+      // Save token
+      await AsyncStorage.setItem("authToken", token);
+
+      // Fetch user profile using the token
+      const meResp = await fetch(`${API_BASE}/me`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (meResp.ok) {
+        const user = await meResp.json();
+        await AsyncStorage.setItem("authUser", JSON.stringify(user));
+      } else {
+        console.warn("Failed to fetch /me after login", meResp.status);
+      }
+
       Alert.alert("Success", "Logged in successfully");
 
       //needed to add this for the app admin view:
       await AsyncStorage.setItem("userRole","App Admin");
-
-      // Trigger the success callback to navigate to main app
       onSuccess?.();
-    } catch {
+    } catch (err) {
+      console.error(err);
       Alert.alert("Error", "Login failed. Please try again.");
     }
   };
@@ -90,53 +123,6 @@ export default function LoginPage({
           secureTextEntry
           placeholderTextColor="#999"
         />
-
-        {/* <Text style={styles.sectionTitle}>Address Information</Text>
-
-        <Text style={styles.label}>Street Address *</Text> */}
-        {/* <TextInput
-          style={styles.input}
-          placeholder="Enter street address"
-          value={form.street}
-          onChangeText={(text) => handleInputChange("street", text)}
-          placeholderTextColor="#999"
-        />
-
-        <Text style={styles.label}>Apt Number (if applicable)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter apartment number"
-          value={form.apt}
-          onChangeText={(text) => handleInputChange("apt", text)}
-          placeholderTextColor="#999"
-        />
-
-        <Text style={styles.label}>Zip Code *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter zip code"
-          value={form.zipCode}
-          onChangeText={(text) => handleInputChange("zipCode", text)}
-          placeholderTextColor="#999"
-        />
-
-        <Text style={styles.label}>State *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter state"
-          value={form.state}
-          onChangeText={(text) => handleInputChange("state", text)}
-          placeholderTextColor="#999"
-        />
-
-        <Text style={styles.label}>City *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter city"
-          value={form.city}
-          onChangeText={(text) => handleInputChange("city", text)}
-          placeholderTextColor="#999"
-        /> */}
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>Log In</Text>

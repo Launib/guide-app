@@ -4,3 +4,36 @@ GET {{MyApiProject_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Register new user
+POST {{MyApiProject_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+	"email": "user1@example.com",
+	"password": "User1234!",
+	"userName": "user1",
+	"firstName": "User",
+	"lastName": "One",
+	"accountType": "RegularUser",
+	"street": "123 Main St",
+	"city": "Sampleville",
+	"state": "CA",
+	"zipCode": "12345"
+}
+
+### Request token (login)
+POST {{MyApiProject_HostAddress}}/api/auth/token
+Content-Type: application/json
+
+{
+	"email": "user1@example.com",
+	"password": "User1234!"
+}
+
+### Get current user (use Authorization: Bearer <token>)
+GET {{MyApiProject_HostAddress}}/api/auth/me
+Authorization: Bearer {{token}}
+Accept: application/json
+
+

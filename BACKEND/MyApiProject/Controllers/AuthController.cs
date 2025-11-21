@@ -1,4 +1,3 @@
-// ...existing code...
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +21,88 @@ public class AuthController : ControllerBase
         _config = config;
     }
 
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+            return BadRequest("Email and password are required.");
+
+        if (await _userManager.FindByEmailAsync(dto.Email) != null)
+            return Conflict("Email already in use.");
+
+        var user = new ApplicationUser
+        {
+            UserName = string.IsNullOrWhiteSpace(dto.UserName) ? dto.Email : dto.UserName,
+            Email = dto.Email,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Street = dto.Street,
+            Apt = dto.Apt,
+            ZipCode = dto.ZipCode,
+            State = dto.State,
+            City = dto.City,
+            AccountType = dto.AccountType,
+            DepartmentName = dto.DepartmentName,
+            BusinessName = dto.BusinessName,
+            BusinessLicense = dto.BusinessLicense,
+            BusinessCity = dto.BusinessCity,
+            BusinessState = dto.BusinessState,
+            BusinessZip = dto.BusinessZip,
+            GovernmentId = dto.GovernmentId,
+            CityName = dto.CityName,
+            UserCity = dto.UserCity,
+            UserStreet = dto.UserStreet,
+            UserZip = dto.UserZip,
+            UserState = dto.UserState,
+            UserApt = dto.UserApt
+        };
+
+        var result = await _userManager.CreateAsync(user, dto.Password);
+        if (!result.Succeeded)
+            return BadRequest(result.Errors);
+
+        // assign a role if provided, otherwise default to RegularUser
+        var role = string.IsNullOrWhiteSpace(dto.AccountType) ? "RegularUser" : dto.AccountType;
+        await _userManager.AddToRoleAsync(user, role);
+
+        // Generate token
+        var roles = await _userManager.GetRolesAsync(user);
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty)
+        };
+        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? ""));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            signingCredentials: creds
+        );
+
+        var written = new JwtSecurityTokenHandler().WriteToken(token);
+
+        return Ok(new
+        {
+            token = written,
+            user = new
+            {
+                id = user.Id,
+                email = user.Email,
+                userName = user.UserName,
+                firstName = user.FirstName,
+                lastName = user.LastName,
+                roles = roles
+            }
+        });
+    }
+
     [HttpPost("token")]
     [AllowAnonymous]
     public async Task<IActionResult> Token([FromBody] LoginDto dto)
@@ -35,8 +116,8 @@ public class AuthController : ControllerBase
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(ClaimTypes.Name, user.UserName),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email)
+            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty)
         };
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
@@ -67,8 +148,62 @@ public class AuthController : ControllerBase
         if (user == null) return Unauthorized();
 
         var roles = await _userManager.GetRolesAsync(user);
-        return Ok(new { id = user.Id, email = user.Email, userName = user.UserName, roles });
+        return Ok(new
+        {
+            id = user.Id,
+            email = user.Email,
+            userName = user.UserName,
+            firstName = user.FirstName,
+            lastName = user.LastName,
+            street = user.Street,
+            apt = user.Apt,
+            zipCode = user.ZipCode,
+            state = user.State,
+            city = user.City,
+            accountType = user.AccountType,
+            departmentName = user.DepartmentName,
+            businessName = user.BusinessName,
+            businessLicense = user.BusinessLicense,
+            businessCity = user.BusinessCity,
+            businessState = user.BusinessState,
+            businessZip = user.BusinessZip,
+            governmentId = user.GovernmentId,
+            cityName = user.CityName,
+            userCity = user.UserCity,
+            userStreet = user.UserStreet,
+            userZip = user.UserZip,
+            userState = user.UserState,
+            userApt = user.UserApt,
+            roles = roles
+        });
     }
 }
 
 public record LoginDto(string Email, string Password);
+
+public record RegisterDto(
+    string Email,
+    string Password,
+    string? UserName,
+    string? FirstName,
+    string? LastName,
+    string? Street,
+    string? Apt,
+    string? ZipCode,
+    string? State,
+    string? City,
+    string? AccountType,
+    string? DepartmentName,
+    string? BusinessName,
+    string? BusinessLicense,
+    string? BusinessCity,
+    string? BusinessState,
+    string? BusinessZip,
+    string? GovernmentId,
+    string? CityName,
+    string? UserCity,
+    string? UserStreet,
+    string? UserZip,
+    string? UserState,
+    string? UserApt
+);

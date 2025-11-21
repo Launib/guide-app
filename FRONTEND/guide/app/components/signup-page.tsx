@@ -96,6 +96,7 @@ export default function SignUpPage({
   };
 
   const handleSubmit = async () => {
+    // Basic required field validation
     if (
       !form.username ||
       !form.password ||
@@ -107,7 +108,7 @@ export default function SignUpPage({
       return;
     }
 
-    // Validate account-type-specific fields
+    // Account-type specific validation
     if (form.accountType === UserAccountType.admin && !form.departmentName) {
       Alert.alert("Error", "Please enter your department name.");
       return;
@@ -128,16 +129,67 @@ export default function SignUpPage({
     }
 
     try {
-      // TODO: Call sign-up API with form data
-      console.log("Sign up form submitted:", form);
+      // Map frontend fields to backend RegisterDto
+      const payload: any = {
+        email: form.username,
+        password: form.password,
+        userName: form.username,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        accountType: form.accountType,
+        departmentName: form.departmentName,
+        businessName: form.businessName,
+        businessLicense: form.businessLicense,
+        businessCity: form.businessCity,
+        businessState: form.businessState,
+        businessZip: form.businessZip,
+        cityName: form.cityName,
+        governmentId: form.governmentId,
+        // address fields
+        street: form.street,
+        apt: form.apt,
+        zipCode: form.zipCode,
+        state: form.state,
+        city: form.city,
+        // also include user-prefixed fields expected by backend
+        userStreet: form.street,
+        userCity: form.city,
+        userZip: form.zipCode,
+        userState: form.state,
+        userApt: form.apt,
+      };
 
-      // For now, simulate successful sign-up by storing a token
-      await AsyncStorage.setItem("userToken", form.username);
+      // NOTE: If running on a mobile emulator, `localhost` may not point to your machine.
+      // - Android emulator (default) use http://10.0.2.2:5162
+      // - iOS simulator can use http://localhost:5162
+      const API_BASE = "http://localhost:5162/api/auth";
+
+      const resp = await fetch(`${API_BASE}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text();
+        console.error("Register failed:", resp.status, txt);
+        Alert.alert("Error", `Sign up failed: ${resp.status}`);
+        return;
+      }
+
+      const data = await resp.json();
+      // server returns { token, user }
+      const token = data.token;
+      const user = data.user;
+
+      // Save token and user locally
+      await AsyncStorage.setItem("authToken", token);
+      await AsyncStorage.setItem("authUser", JSON.stringify(user));
+
       Alert.alert("Success", "Account created successfully");
-
-      // Trigger the success callback to navigate to main app
       onSuccess?.();
-    } catch {
+    } catch (err) {
+      console.error(err);
       Alert.alert("Error", "Sign up failed. Please try again.");
     }
   };

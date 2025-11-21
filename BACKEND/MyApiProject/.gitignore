@@ -30,3 +30,10 @@ secrets.json
 # OS-specific junk
 .DS_Store
 Thumbs.db
+
+Plan
+VMs
+CPUs per VM
+RAM per VM
+Storage
+Monthly

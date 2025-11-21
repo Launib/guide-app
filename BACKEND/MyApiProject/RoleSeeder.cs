@@ -1,4 +1,3 @@
-// ...existing code...
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
@@ -37,4 +36,3 @@ namespace MyApiProject.Data
         }
     }
 }
-// ...existing code...
