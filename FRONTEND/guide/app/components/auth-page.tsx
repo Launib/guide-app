@@ -5,7 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoginPage from "./login-page";
 import SignUpPage from "./signup-page";
 
@@ -49,6 +51,42 @@ export default function AuthPage({
         >
           <Text style={styles.signupButtonText}>Sign Up</Text>
         </TouchableOpacity>
+        {typeof __DEV__ !== "undefined" && __DEV__ && (
+          <TouchableOpacity
+            style={[
+              styles.signupButton,
+              { marginTop: 8, backgroundColor: "#ffd700" },
+            ]}
+            onPress={async () => {
+              try {
+                const fakeToken = "dev-token";
+                const fakeUser = {
+                  id: "dev-user",
+                  email: "dev@example.com",
+                  userName: "dev",
+                  firstName: "Dev",
+                  lastName: "User",
+                  roles: ["Admin"],
+                };
+                await AsyncStorage.setItem("authToken", fakeToken);
+                await AsyncStorage.setItem("userToken", fakeToken);
+                await AsyncStorage.setItem(
+                  "authUser",
+                  JSON.stringify(fakeUser)
+                );
+                await AsyncStorage.setItem("username", fakeUser.userName);
+                await AsyncStorage.setItem("userRole", "App Admin");
+                Alert.alert("Dev", "Simulated admin login saved.");
+                onAuthSuccess?.();
+              } catch (e) {
+                console.error(e);
+                Alert.alert("Error", "Failed to set dev credentials.");
+              }
+            }}
+          >
+            <Text style={styles.signupButtonText}>Test as Admin (dev)</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );

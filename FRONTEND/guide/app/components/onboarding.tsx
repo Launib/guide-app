@@ -6,6 +6,7 @@ import {
   Dimensions,
   StyleSheet,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -65,8 +66,12 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.skipRow}>
-        <TouchableOpacity onPress={skip} style={styles.skipButton}>
+      <View style={styles.skipRow} pointerEvents="box-none">
+        <TouchableOpacity
+          onPress={skip}
+          style={styles.skipButton}
+          hitSlop={{ top: 16, left: 16, right: 16, bottom: 16 }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       </View>
@@ -118,8 +123,20 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  skipRow: { alignItems: "flex-end", padding: 16 },
-  skipButton: { paddingHorizontal: 8, paddingVertical: 4 },
+  skipRow: {
+    position: "absolute",
+    top: Platform.OS === "android" ? 48 : 40,
+    right: 16,
+    zIndex: 999,
+    alignItems: "flex-end",
+    padding: 8,
+  },
+  skipButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 8,
+  },
   skipText: { color: "#555" },
   slide: {
     width,

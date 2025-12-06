@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Alert,
   Modal,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -128,6 +129,27 @@ export default function SignUpPage({
       return;
     }
 
+    // DEV shortcut: when running in development, simulate successful signup
+    if (typeof __DEV__ !== "undefined" && __DEV__) {
+      const fakeToken = "dev-token";
+      const fakeUser = {
+        id: "dev-user",
+        email: form.username,
+        userName: form.username,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        roles: ["Admin"],
+      };
+      await AsyncStorage.setItem("authToken", fakeToken);
+      await AsyncStorage.setItem("userToken", fakeToken);
+      await AsyncStorage.setItem("authUser", JSON.stringify(fakeUser));
+      await AsyncStorage.setItem("username", form.username);
+      await AsyncStorage.setItem("userRole", "App Admin");
+      Alert.alert("Dev", "Simulated signup as App Admin (dev mode).");
+      onSuccess?.();
+      return;
+    }
+
     try {
       // Map frontend fields to backend RegisterDto
       const payload: any = {
@@ -159,10 +181,11 @@ export default function SignUpPage({
         userApt: form.apt,
       };
 
-      // NOTE: If running on a mobile emulator, `localhost` may not point to your machine.
-      // - Android emulator (default) use http://10.0.2.2:5162
-      // - iOS simulator can use http://localhost:5162
-      const API_BASE = "http://localhost:5162/api/auth";
+      // Use same host strategy as login: Android emulator => 10.0.2.2, otherwise use host IP
+      const API_BASE =
+        Platform.OS === "android"
+          ? "http://10.0.2.2:5162/api/auth"
+          : "http://10.0.0.60:5162/api/auth";
 
       const resp = await fetch(`${API_BASE}/register`, {
         method: "POST",
@@ -173,7 +196,7 @@ export default function SignUpPage({
       if (!resp.ok) {
         const txt = await resp.text();
         console.error("Register failed:", resp.status, txt);
-        Alert.alert("Error", `Sign up failed: ${resp.status}`);
+        Alert.alert("Error", txt || `Sign up failed: ${resp.status}`);
         return;
       }
 
@@ -182,9 +205,17 @@ export default function SignUpPage({
       const token = data.token;
       const user = data.user;
 
-      // Save token and user locally
+      // Save token and user locally and also set keys used by layout
       await AsyncStorage.setItem("authToken", token);
+      await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("authUser", JSON.stringify(user));
+
+      const usernameVal = user?.userName ?? user?.userName ?? form.username;
+      await AsyncStorage.setItem("username", usernameVal);
+
+      const roleVal =
+        (user?.roles && user.roles[0]) || form.accountType || "RegularUser";
+      await AsyncStorage.setItem("userRole", roleVal);
 
       Alert.alert("Success", "Account created successfully");
       onSuccess?.();

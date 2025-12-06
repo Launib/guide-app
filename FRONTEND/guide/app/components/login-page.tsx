@@ -37,6 +37,26 @@ export default function LoginPage({
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
+    // DEV shortcut: simulate successful login when running in development
+    if (typeof __DEV__ !== "undefined" && __DEV__) {
+      const fakeToken = "dev-token";
+      const fakeUser = {
+        id: "dev-user",
+        email: form.username,
+        userName: form.username,
+        firstName: "Dev",
+        lastName: "User",
+        roles: ["Admin"],
+      };
+      await AsyncStorage.setItem("authToken", fakeToken);
+      await AsyncStorage.setItem("userToken", fakeToken);
+      await AsyncStorage.setItem("authUser", JSON.stringify(fakeUser));
+      await AsyncStorage.setItem("username", form.username);
+      await AsyncStorage.setItem("userRole", "App Admin");
+      Alert.alert("Dev", "Simulated login as App Admin (dev mode).");
+      onSuccess?.();
+      return;
+    }
     try {
       const payload = {
         email: form.username,
@@ -84,7 +104,7 @@ export default function LoginPage({
       Alert.alert("Success", "Logged in successfully");
 
       //needed to add this for the app admin view:
-      await AsyncStorage.setItem("userRole","App Admin");
+      await AsyncStorage.setItem("userRole", "App Admin");
       onSuccess?.();
     } catch (err) {
       console.error(err);

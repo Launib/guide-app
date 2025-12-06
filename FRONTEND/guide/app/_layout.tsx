@@ -13,43 +13,51 @@ export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   //new:
-  const [userRole, setUserRole]= useState<string | null >(null); //this could be used for the admin, business user, reg user, etc. 
-  const [username, setUsername]= useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null); //this could be used for the admin, business user, reg user, etc.
+  const [username, setUsername] = useState<string | null>(null);
+
+  // DEV MODE: Set to true to show onboarding every time you open the app for testing
+  const FORCE_SHOW_ONBOARDING = false;
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      AsyncStorage.getItem("hasSeenOnboarding"),
-      AsyncStorage.getItem("userToken"),
 
-      //new:
-      AsyncStorage.getItem("userRole"), 
-      AsyncStorage.getItem("username"),
-
-    ])
-    //new: added "type" and "name" to this: 
-      .then(([onboarded, userToken, type, name]) => {
+    const readFlags = async () => {
+      try {
+        const [onboarded, authToken, userToken, type, name] = await Promise.all(
+          [
+            AsyncStorage.getItem("hasSeenOnboarding"),
+            AsyncStorage.getItem("authToken"),
+            AsyncStorage.getItem("userToken"),
+            AsyncStorage.getItem("userRole"),
+            AsyncStorage.getItem("username"),
+          ]
+        );
         if (!mounted) return;
-        setNeedsOnboarding(onboarded !== "true");
-        setIsAuthenticated(!!userToken);
-
-        //new:
+        setNeedsOnboarding(FORCE_SHOW_ONBOARDING || onboarded !== "true");
+        setIsAuthenticated(!!(authToken || userToken));
         setUserRole(type ?? null);
         setUsername(name ?? null);
-      })
-      .catch(() => {
+      } catch (err) {
         if (!mounted) return;
         setNeedsOnboarding(true);
         setIsAuthenticated(false);
-
-        //new:
         setUserRole(null);
         setUsername(null);
-      });
+      }
+    };
+
+    // Initial read
+    readFlags();
+
+    // Poll briefly so that changes made by other screens (logout, settings) are noticed
+    const interval = setInterval(readFlags, 800);
+
     return () => {
       mounted = false;
+      clearInterval(interval);
     };
-  }, []);
+  }, [FORCE_SHOW_ONBOARDING]);
 
   if (needsOnboarding === null) {
     // still loading flags; render a simple loading placeholder to avoid a blank screen
@@ -76,9 +84,12 @@ export default function RootLayout() {
     );
   }
 
-  //new: (would need to do this for other users in the future:)
-  if(userRole === "App Admin" && username){
-    return <AdminView userName= {username} UserRole = " App Admin" />;
+  // Render admin view when role contains 'admin' and we have a username
+  if (userRole && username) {
+    const normalized = (userRole || "").toString().toLowerCase();
+    if (normalized.includes("admin")) {
+      return <AdminView userName={username} UserRole={userRole} />;
+    }
   }
 
   return <Stack />;
