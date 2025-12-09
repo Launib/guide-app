@@ -1,26 +1,47 @@
 # guide-app
 
-# To run your project, navigate to the directory and run one of the following npm commands.
+## Get started
 
-- cd guide
-- npm run android
-- npm run ios # you need to use macOS to build the iOS project - use the Expo app if you need to do iOS development without a Mac
-- npm run web
+Make sure to have the expo go app installed on your phone to run the application there and for these steps to work.
 
-# FRONTEND
+# Frontend
 
-# BACKEND   
-- Download .NET SDK https://dotnet.microsoft.com/en-us/download
-- ran dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer for RBAC token for secure frontend login
-- ran dotnet add package Microsoft.EntityFrameworkCore.Design
-- 
+1. Install dependencies
+
+   ``` npm install ```
+
+2. Start the app
+
+   ``` npx expo start ```
+   if this does not work run ``` npx expo start --tunnel ```
+
+3.  update package.json if need be... ``` {
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-navigation/bottom-tabs": "^7.8.5",
+    "@react-navigation/native": "^7.1.20",
+    "expo": "^54.0.23",
+    "expo-dev-client": "~6.0.17",
+    "react-native-gesture-handler": "^2.29.1",
+    "react-native-reanimated": "^4.1.5",
+    "react-native-safe-area-context": "^5.6.2",
+    "react-native-screens": "^4.18.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "@types/react-native": "^0.72.8",
+    "typescript": "~5.9.2"
+  }
+} ```
+
+# Backend 
+
+1. Make sure to be in the BACKEND/MyApiProject folder before running this command.
+    ``` dotnet run ```
+
+2. Database Information is held in appsettings.development.json and ignored in .gitignore not to be committed
+
+3. Database is held in Avien Cloud 
 
 
-# Database
-- Steps taken to create the database: 
-- ran dotnet new webapi -n MyApiProject to create backend
-- cd .\MyApiProject\
-- ran dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL
-- ran dotnet add package Microsoft.EntityFrameworkCore.Tools
-- ran dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
-- added .gitIgnore file
+Any Questions Let me know!
