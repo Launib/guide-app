@@ -52,40 +52,188 @@ export default function AuthPage({
           <Text style={styles.signupButtonText}>Sign Up</Text>
         </TouchableOpacity>
         {typeof __DEV__ !== "undefined" && __DEV__ && (
-          <TouchableOpacity
-            style={[
-              styles.signupButton,
-              { marginTop: 8, backgroundColor: "#ffd700" },
-            ]}
-            onPress={async () => {
-              try {
-                const fakeToken = "dev-token";
-                const fakeUser = {
-                  id: "dev-user",
-                  email: "dev@example.com",
-                  userName: "dev",
-                  firstName: "Dev",
-                  lastName: "User",
-                  roles: ["Admin"],
-                };
-                await AsyncStorage.setItem("authToken", fakeToken);
-                await AsyncStorage.setItem("userToken", fakeToken);
-                await AsyncStorage.setItem(
-                  "authUser",
-                  JSON.stringify(fakeUser)
-                );
-                await AsyncStorage.setItem("username", fakeUser.userName);
-                await AsyncStorage.setItem("userRole", "App Admin");
-                Alert.alert("Dev", "Simulated admin login saved.");
-                onAuthSuccess?.();
-              } catch (e) {
-                console.error(e);
-                Alert.alert("Error", "Failed to set dev credentials.");
-              }
-            }}
-          >
-            <Text style={styles.signupButtonText}>Test as Admin (dev)</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={[
+                styles.signupButton,
+                { marginTop: 8, backgroundColor: "#ffd700" },
+              ]}
+              onPress={async () => {
+                try {
+                  const fakeToken = "dev-token";
+                  const fakeUser = {
+                    id: "dev-user",
+                    email: "dev@example.com",
+                    userName: "dev",
+                    firstName: "Dev",
+                    lastName: "User",
+                    roles: ["Admin"],
+                  };
+                  await AsyncStorage.setItem("authToken", fakeToken);
+                  await AsyncStorage.setItem("userToken", fakeToken);
+                  await AsyncStorage.setItem(
+                    "authUser",
+                    JSON.stringify(fakeUser)
+                  );
+                  await AsyncStorage.setItem("username", fakeUser.userName);
+                  await AsyncStorage.setItem("userRole", "App Admin");
+                  Alert.alert("Dev", "Simulated admin login saved.");
+                  onAuthSuccess?.();
+                } catch (e) {
+                  console.error(e);
+                  Alert.alert("Error", "Failed to set dev credentials.");
+                }
+              }}
+            >
+              <Text style={styles.signupButtonText}>Test as Admin (dev)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.signupButton,
+                { marginTop: 8, backgroundColor: "#ffd700" },
+              ]}
+              onPress={async () => {
+                try {
+                  const fakeToken = "dev-token";
+                  const fakeUser = {
+                    id: "donut-town-dev-user",
+                    email: "donutTown@example.com",
+                    userName: "donutTown",
+                    firstName: "Donut",
+                    lastName: "Town-Dev",
+                    roles: ["Business"],
+                  };
+                  await AsyncStorage.setItem("authToken", fakeToken);
+                  await AsyncStorage.setItem("userToken", fakeToken);
+                  await AsyncStorage.setItem(
+                    "authUser",
+                    JSON.stringify(fakeUser)
+                  );
+                  await AsyncStorage.setItem("username", fakeUser.userName);
+                  await AsyncStorage.setItem("userRole", "Business");
+                  Alert.alert("Dev", "Simulated business login saved.");
+                  onAuthSuccess?.();
+                } catch (e) {
+                  console.error(e);
+                  Alert.alert("Error", "Failed to set dev credentials.");
+                }
+              }}
+            >
+              <Text style={styles.signupButtonText}>
+                Test as Business (dev)
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.signupButton,
+                { marginTop: 8, backgroundColor: "#ffd700" },
+              ]}
+              onPress={async () => {
+                try {
+                  const fakeToken = "dev-token";
+                  const fakeUser = {
+                    id: "CityAdmin-user",
+                    email: "CityAdmin@example.com",
+                    userName: "CityAdmin",
+                    firstName: "City",
+                    lastName: "Admin",
+                    roles: ["CityAdmin"],
+                  };
+                  await AsyncStorage.setItem("authToken", fakeToken);
+                  await AsyncStorage.setItem("userToken", fakeToken);
+                  await AsyncStorage.setItem(
+                    "authUser",
+                    JSON.stringify(fakeUser)
+                  );
+                  await AsyncStorage.setItem("username", fakeUser.userName);
+                  await AsyncStorage.setItem("userRole", "CityAdmin");
+                  Alert.alert("Dev", "Simulated CityAdmin login saved.");
+                  onAuthSuccess?.();
+                } catch (e) {
+                  console.error(e);
+                  Alert.alert("Error", "Failed to set dev credentials.");
+                }
+              }}
+            >
+              <Text style={styles.signupButtonText}>
+                Test as City Admin (dev)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.signupButton,
+                { marginTop: 8, backgroundColor: "#ffd700" },
+              ]}
+              onPress={async () => {
+                try {
+                  const fakeToken = "dev-token";
+                  const fakeUser = {
+                    id: "regUser-dev-user",
+                    email: "regUser@example.com",
+                    userName: "regUser",
+                    firstName: "Reg",
+                    lastName: "User",
+                    roles: ["RegularUser"],
+                  };
+                  await AsyncStorage.setItem("authToken", fakeToken);
+                  await AsyncStorage.setItem("userToken", fakeToken);
+                  await AsyncStorage.setItem(
+                    "authUser",
+                    JSON.stringify(fakeUser)
+                  );
+                  await AsyncStorage.setItem("username", fakeUser.userName);
+                  await AsyncStorage.setItem("userRole", "RegularUser");
+                  Alert.alert("Dev", "Simulated business login saved.");
+                  onAuthSuccess?.();
+                } catch (e) {
+                  console.error(e);
+                  Alert.alert("Error", "Failed to set dev credentials.");
+                }
+              }}
+            >
+              <Text style={styles.signupButtonText}>
+                Test as Regular User (dev)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.signupButton,
+                { marginTop: 8, backgroundColor: "#ffd700" },
+              ]}
+              onPress={async () => {
+                try {
+                  const fakeToken = "dev-token";
+                  const fakeUser = {
+                    id: "subManager-dev-user",
+                    email: "subManager-dev@example.com",
+                    userName: "subManager",
+                    firstName: "sub",
+                    lastName: "manager",
+                    roles: ["SubManager"],
+                  };
+                  await AsyncStorage.setItem("authToken", fakeToken);
+                  await AsyncStorage.setItem("userToken", fakeToken);
+                  await AsyncStorage.setItem(
+                    "authUser",
+                    JSON.stringify(fakeUser)
+                  );
+                  await AsyncStorage.setItem("username", fakeUser.userName);
+                  await AsyncStorage.setItem("userRole", "SubManager");
+                  Alert.alert("Dev", "Simulated SubManager login saved.");
+                  onAuthSuccess?.();
+                } catch (e) {
+                  console.error(e);
+                  Alert.alert("Error", "Failed to set dev credentials.");
+                }
+              }}
+            >
+              <Text style={styles.signupButtonText}>
+                Test as Sub-Manager (dev)
+              </Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     </SafeAreaView>
