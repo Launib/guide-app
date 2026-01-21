@@ -150,6 +150,27 @@ export default function SignUpPage({
       return;
     }
 
+    // DEV shortcut: when running in development, simulate successful signup
+    if (typeof __DEV__ !== "undefined" && __DEV__) {
+      const fakeToken = "dev-token";
+      const fakeUser = {
+        id: "donut-town-dev-user",
+        email: form.username,
+        userName: form.username,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        roles: ["Business"],
+      };
+      await AsyncStorage.setItem("authToken", fakeToken);
+      await AsyncStorage.setItem("userToken", fakeToken);
+      await AsyncStorage.setItem("authUser", JSON.stringify(fakeUser));
+      await AsyncStorage.setItem("username", form.username);
+      await AsyncStorage.setItem("userRole", "Business");
+      Alert.alert("Dev", "Simulated signup as Business (dev mode).");
+      onSuccess?.();
+      return;
+    }
+
     try {
       // Map frontend fields to backend RegisterDto
       const payload: any = {

@@ -18,21 +18,6 @@ namespace MyApiProject.Data
                     await roleManager.CreateAsync(new IdentityRole(role));
                 }
             }
-
-            // optional default admin user from config (user-secrets or env)
-            var adminEmail = config["AdminUser:Email"] ?? "admin@example.com";
-            var adminPassword = config["AdminUser:Password"] ?? "Admin123!";
-
-            if (await userManager.FindByEmailAsync(adminEmail) == null)
-            {
-                var admin = new ApplicationUser { UserName = adminEmail, Email =
-                adminEmail, EmailConfirmed = true };
-                var result = await userManager.CreateAsync(admin, adminPassword);
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(admin, "Admin");
-                }
-            }
         }
     }
 }
