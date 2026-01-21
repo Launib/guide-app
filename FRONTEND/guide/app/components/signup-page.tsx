@@ -2,58 +2,62 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
   SafeAreaView,
+  TextInput,
+  ScrollView,
   Alert,
-  Modal,
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 enum UserAccountType {
-  regularUser = "Regular",
   admin = "Admin",
   business = "Business",
-  cityAdmin = "City",
-  subManager = "Sub Manager",
+  cityAdmin = "CityAdmin",
+  regular = "RegularUser",
 }
 
 type AccountType =
-  | UserAccountType.regularUser
   | UserAccountType.admin
   | UserAccountType.business
   | UserAccountType.cityAdmin
+  | UserAccountType.regular
   | "";
 
-interface SignUpFormData {
+interface BaseFormData {
+  email: string;
   username: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  accountType: AccountType;
-  // Admin-specific questions
-  departmentName?: string;
-  // Business-specific questions
-  businessName?: string;
-  businessLicense?: string;
-  // City Admin-specific questions
-  cityName?: string;
-  governmentId?: string;
-  // Address information
-  street?: string;
-  apt?: string;
-  zipCode?: string;
-  state?: string;
-  city?: string;
-  // Business location information
-  businessAddress?: string;
-  businessCity?: string;
-  businessState?: string;
-  businessZip?: string;
+  userFullName: string;
+  phoneNumber: string;
+  location: string;
 }
+
+interface AdminFormData extends BaseFormData {
+  departmentName: string;
+}
+
+interface BusinessFormData extends BaseFormData {
+  businessName: string;
+  businessLicense: string;
+  businessPhoneNumber: string;
+  businessAddress: string;
+}
+
+interface CityAdminFormData extends BaseFormData {
+  cityName: string;
+  governmentId: string;
+}
+
+interface RegularFormData extends BaseFormData {}
+
+type FormData =
+  | AdminFormData
+  | BusinessFormData
+  | CityAdminFormData
+  | RegularFormData;
 
 export default function SignUpPage({
   onBack,
@@ -62,151 +66,167 @@ export default function SignUpPage({
   onBack: () => void;
   onSuccess?: () => void;
 }) {
-  const [form, setForm] = useState<SignUpFormData>({
-    username: "",
-    password: "",
-    firstName: "",
-    lastName: "",
-    accountType: "",
+  const [step, setStep] = useState<"select" | "form">("select");
+  const [selectedType, setSelectedType] = useState<AccountType>("");
+  const [form, setForm] = useState<any>({});
+
+  // Password validation states
+  const [passwordChecks, setPasswordChecks] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
   });
-  const [pickerVisible, setPickerVisible] = useState(false);
 
-  const pickerOptions = [
-    { label: "Regular User", value: UserAccountType.regularUser },
-    { label: "Admin", value: UserAccountType.admin },
-    { label: "Business", value: UserAccountType.business },
-    { label: "City Admin", value: UserAccountType.cityAdmin },
-    { label: "Sub Manager", value: UserAccountType.subManager },
-  ];
-
-  const handleInputChange = (field: keyof SignUpFormData, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const handleTypeSelect = (type: AccountType) => {
+    setSelectedType(type);
+    setForm({
+      email: "",
+      username: "",
+      password: "",
+      userFullName: "",
+      phoneNumber: "",
+      location: "",
+      ...(type === UserAccountType.admin && { departmentName: "" }),
+      ...(type === UserAccountType.business && {
+        businessName: "",
+        businessLicense: "",
+        businessPhoneNumber: "",
+        businessAddress: "",
+      }),
+      ...(type === UserAccountType.cityAdmin && {
+        cityName: "",
+        governmentId: "",
+      }),
+    });
+    setStep("form");
   };
 
-  const handleAccountTypeChange = (type: AccountType) => {
-    setForm((prev) => ({
-      ...prev,
-      accountType: type,
-      // Clear account-type-specific fields when changing type
-      departmentName: "",
-      businessName: "",
-      businessLicense: "",
-      cityName: "",
-      governmentId: "",
-    }));
+  const handleInputChange = (field: string, value: string) => {
+    setForm((prev: any) => ({ ...prev, [field]: value }));
+
+    // Update password validation checks
+    if (field === "password") {
+      setPasswordChecks({
+        minLength: value.length >= 6,
+        hasUppercase: /[A-Z]/.test(value),
+        hasLowercase: /[a-z]/.test(value),
+        hasNumber: /[0-9]/.test(value),
+        hasSpecialChar: /[^A-Za-z0-9]/.test(value),
+      });
+    }
+  };
+
+  // Check if all required fields are filled
+  const isFormValid = () => {
+    const baseFieldsFilled =
+      form.email &&
+      form.username &&
+      form.password &&
+      form.userFullName &&
+      form.phoneNumber &&
+      form.location;
+
+    const passwordValid =
+      passwordChecks.minLength &&
+      passwordChecks.hasUppercase &&
+      passwordChecks.hasLowercase &&
+      passwordChecks.hasNumber &&
+      passwordChecks.hasSpecialChar;
+
+    if (!baseFieldsFilled || !passwordValid) return false;
+
+    if (selectedType === UserAccountType.admin && !form.departmentName)
+      return false;
+    if (
+      selectedType === UserAccountType.business &&
+      (!form.businessName ||
+        !form.businessLicense ||
+        !form.businessPhoneNumber ||
+        !form.businessAddress)
+    )
+      return false;
+    if (
+      selectedType === UserAccountType.cityAdmin &&
+      (!form.cityName || !form.governmentId)
+    )
+      return false;
+
+    return true;
   };
 
   const handleSubmit = async () => {
-    // Basic required field validation
+    // Validation
     if (
+      !form.email ||
       !form.username ||
       !form.password ||
-      !form.firstName ||
-      !form.lastName ||
-      !form.accountType
+      !form.userFullName ||
+      !form.phoneNumber ||
+      !form.location
     ) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
 
-    // Account-type specific validation
-    if (form.accountType === UserAccountType.admin && !form.departmentName) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      Alert.alert("Error", "Please enter a valid email address.");
+      return;
+    }
+
+    if (selectedType === UserAccountType.admin && !form.departmentName) {
       Alert.alert("Error", "Please enter your department name.");
       return;
     }
     if (
-      form.accountType === UserAccountType.business &&
-      (!form.businessName || !form.businessLicense)
+      selectedType === UserAccountType.business &&
+      (!form.businessName ||
+        !form.businessLicense ||
+        !form.businessPhoneNumber ||
+        !form.businessAddress)
     ) {
       Alert.alert("Error", "Please fill in all business information.");
       return;
     }
     if (
-      form.accountType === UserAccountType.cityAdmin &&
+      selectedType === UserAccountType.cityAdmin &&
       (!form.cityName || !form.governmentId)
     ) {
       Alert.alert("Error", "Please fill in all city admin information.");
       return;
     }
 
-    // DEV shortcut: when running in development, simulate successful signup
-    if (typeof __DEV__ !== "undefined" && __DEV__) {
-      const fakeToken = "dev-token";
-      const fakeUser = {
-        id: "dev-user",
-        email: form.username,
-        userName: form.username,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        roles: ["Admin"],
-      };
-      await AsyncStorage.setItem("authToken", fakeToken);
-      await AsyncStorage.setItem("userToken", fakeToken);
-      await AsyncStorage.setItem("authUser", JSON.stringify(fakeUser));
-      await AsyncStorage.setItem("username", form.username);
-      await AsyncStorage.setItem("userRole", "App Admin");
-      Alert.alert("Dev", "Simulated signup as App Admin (dev mode).");
-      onSuccess?.();
-      return;
-    }
-
-    // DEV shortcut: when running in development, simulate successful signup
-    if (typeof __DEV__ !== "undefined" && __DEV__) {
-      const fakeToken = "dev-token";
-      const fakeUser = {
-        id: "donut-town-dev-user",
-        email: form.username,
-        userName: form.username,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        roles: ["Business"],
-      };
-      await AsyncStorage.setItem("authToken", fakeToken);
-      await AsyncStorage.setItem("userToken", fakeToken);
-      await AsyncStorage.setItem("authUser", JSON.stringify(fakeUser));
-      await AsyncStorage.setItem("username", form.username);
-      await AsyncStorage.setItem("userRole", "Business");
-      Alert.alert("Dev", "Simulated signup as Business (dev mode).");
-      onSuccess?.();
-      return;
-    }
-
     try {
-      // Map frontend fields to backend RegisterDto
       const payload: any = {
-        email: form.username,
+        userEmail: form.email,
         password: form.password,
-        userName: form.username,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        accountType: form.accountType,
-        departmentName: form.departmentName,
-        businessName: form.businessName,
-        businessLicense: form.businessLicense,
-        businessCity: form.businessCity,
-        businessState: form.businessState,
-        businessZip: form.businessZip,
-        cityName: form.cityName,
-        governmentId: form.governmentId,
-        // address fields
-        street: form.street,
-        apt: form.apt,
-        zipCode: form.zipCode,
-        state: form.state,
-        city: form.city,
-        // also include user-prefixed fields expected by backend
-        userStreet: form.street,
-        userCity: form.city,
-        userZip: form.zipCode,
-        userState: form.state,
-        userApt: form.apt,
+        username: form.username,
+        userFullName: form.userFullName,
+        userPhoneNumber: form.phoneNumber,
+        location: form.location,
+        accountType: selectedType,
+        ...(selectedType === UserAccountType.admin && {
+          DepartmentName: form.departmentName,
+        }),
+        ...(selectedType === UserAccountType.business && {
+          BusinessName: form.businessName,
+          BusinessLicense: form.businessLicense,
+          BusinessPhoneNumber: form.businessPhoneNumber,
+          BusinessAddress: form.businessAddress,
+        }),
+        ...(selectedType === UserAccountType.cityAdmin && {
+          CityName: form.cityName,
+          GovernmentId: form.governmentId,
+        }),
       };
 
-      // Use same host strategy as login: Android emulator => 10.0.2.2, otherwise use host IP
       const API_BASE =
         Platform.OS === "android"
           ? "http://10.0.2.2:5162/api/auth"
-          : "http://10.0.0.60:5162/api/auth";
+          : "http://localhost:5162/api/auth";
 
       const resp = await fetch(`${API_BASE}/register`, {
         method: "POST",
@@ -216,49 +236,110 @@ export default function SignUpPage({
 
       if (!resp.ok) {
         const txt = await resp.text();
-        console.error("Register failed:", resp.status, txt);
-        Alert.alert("Error", txt || `Sign up failed: ${resp.status}`);
+        console.log("Signup error - Status:", resp.status, "Message:", txt);
+
+        if (resp.status === 409) {
+          Alert.alert("Email Already Registered", "This email address is already in use. Please use a different email or log in to your existing account.");
+        } else {
+          Alert.alert("Error", txt || `Sign up failed: ${resp.status}`);
+        }
         return;
       }
 
       const data = await resp.json();
-      // server returns { token, user }
       const token = data.token;
       const user = data.user;
 
-      // Save token and user locally and also set keys used by layout
       await AsyncStorage.setItem("authToken", token);
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("authUser", JSON.stringify(user));
-
-      const usernameVal = user?.userName ?? user?.userName ?? form.username;
-      await AsyncStorage.setItem("username", usernameVal);
-
-      const roleVal =
-        (user?.roles && user.roles[0]) || form.accountType || "RegularUser";
-      await AsyncStorage.setItem("userRole", roleVal);
+      await AsyncStorage.setItem("username", user?.userName ?? form.username);
+      await AsyncStorage.setItem("userRole", user?.roles?.[0] ?? selectedType);
 
       Alert.alert("Success", "Account created successfully");
       onSuccess?.();
     } catch (err) {
-      console.error(err);
       Alert.alert("Error", "Sign up failed. Please try again.");
+    }
+  };
+
+  if (step === "select") {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack}>
+            <Text style={styles.backButton}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Choose Your Account Type</Text>
+        </View>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.typeButton}
+            onPress={() => handleTypeSelect(UserAccountType.admin)}
+          >
+            <Text style={styles.typeButtonText}>Admin</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.typeButton}
+            onPress={() => handleTypeSelect(UserAccountType.business)}
+          >
+            <Text style={styles.typeButtonText}>Business</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.typeButton}
+            onPress={() => handleTypeSelect(UserAccountType.cityAdmin)}
+          >
+            <Text style={styles.typeButtonText}>City Admin</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.typeButton}
+            onPress={() => handleTypeSelect(UserAccountType.regular)}
+          >
+            <Text style={styles.typeButtonText}>Regular</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const selectedTypeLabel = (type: AccountType) => {
+    switch (type) {
+      case "Business":
+        return "a Business User";
+      case "Admin":
+        return "An Admin User";
+      case "CityAdmin":
+        return "a City Admin";
+      case "RegularUser":
+        return "a Regular User";
+      default:
+        return null;
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}>
+        <TouchableOpacity onPress={() => setStep("select")}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Sign Up</Text>
+        <Text style={styles.title}>Sign Up as {selectedTypeLabel(selectedType)}</Text>
       </View>
-
       <ScrollView
         style={styles.formContainer}
         showsVerticalScrollIndicator={false}
       >
+        <Text style={styles.label}>Email *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter email"
+          value={form.email}
+          onChangeText={(text) => handleInputChange("email", text)}
+          placeholderTextColor="#999"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
         <Text style={styles.label}>Username *</Text>
         <TextInput
           style={styles.input}
@@ -266,6 +347,7 @@ export default function SignUpPage({
           value={form.username}
           onChangeText={(text) => handleInputChange("username", text)}
           placeholderTextColor="#999"
+          autoCapitalize="none"
         />
 
         <Text style={styles.label}>Password *</Text>
@@ -277,211 +359,169 @@ export default function SignUpPage({
           secureTextEntry
           placeholderTextColor="#999"
         />
-
-        <Text style={styles.label}>First Name *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter first name"
-          value={form.firstName}
-          onChangeText={(text) => handleInputChange("firstName", text)}
-          placeholderTextColor="#999"
-        />
-
-        <Text style={styles.label}>Last Name *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter last name"
-          value={form.lastName}
-          onChangeText={(text) => handleInputChange("lastName", text)}
-          placeholderTextColor="#999"
-        />
-
-        <Text style={styles.label}>Account Type *</Text>
-        <TouchableOpacity
-          style={styles.pickerContainer}
-          onPress={() => setPickerVisible(true)}
-          activeOpacity={0.8}
-        >
+        <View style={styles.passwordRequirements}>
           <Text
-            style={{ padding: 12, color: form.accountType ? "#111" : "#999" }}
+            style={[
+              styles.requirementText,
+              passwordChecks.minLength && styles.requirementMet,
+            ]}
           >
-            {form.accountType ? form.accountType : "Select an account type"}
+            {passwordChecks.minLength ? "✓" : "○"} At least 6 characters
           </Text>
-        </TouchableOpacity>
-
-        <Modal visible={pickerVisible} transparent animationType="fade">
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            onPress={() => setPickerVisible(false)}
+          <Text
+            style={[
+              styles.requirementText,
+              passwordChecks.hasUppercase && styles.requirementMet,
+            ]}
           >
-            <View style={styles.modalContent}>
-              {pickerOptions.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={styles.modalItem}
-                  onPress={() => {
-                    handleAccountTypeChange(opt.value as AccountType);
-                    setPickerVisible(false);
-                  }}
-                >
-                  <Text style={styles.modalItemText}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </TouchableOpacity>
-        </Modal>
+            {passwordChecks.hasUppercase ? "✓" : "○"} One uppercase letter (A-Z)
+          </Text>
+          <Text
+            style={[
+              styles.requirementText,
+              passwordChecks.hasLowercase && styles.requirementMet,
+            ]}
+          >
+            {passwordChecks.hasLowercase ? "✓" : "○"} One lowercase letter (a-z)
+          </Text>
+          <Text
+            style={[
+              styles.requirementText,
+              passwordChecks.hasNumber && styles.requirementMet,
+            ]}
+          >
+            {passwordChecks.hasNumber ? "✓" : "○"} One number (0-9)
+          </Text>
+          <Text
+            style={[
+              styles.requirementText,
+              passwordChecks.hasSpecialChar && styles.requirementMet,
+            ]}
+          >
+            {passwordChecks.hasSpecialChar ? "✓" : "○"} One special character
+          </Text>
+        </View>
 
-        <Text style={styles.sectionTitle}>Address Information</Text>
-
-        <Text style={styles.label}>Street Address *</Text>
+        <Text style={styles.label}>Full Name *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter street address"
-          value={form.street}
-          onChangeText={(text) => handleInputChange("street", text)}
+          placeholder="Enter full name"
+          value={form.userFullName}
+          onChangeText={(text) => handleInputChange("userFullName", text)}
           placeholderTextColor="#999"
         />
 
-        <Text style={styles.label}>Apt Number (if applicable)</Text>
+        <Text style={styles.label}>Phone Number *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter apartment number"
-          value={form.apt}
-          onChangeText={(text) => handleInputChange("apt", text)}
+          placeholder="Enter phone number"
+          value={form.phoneNumber}
+          onChangeText={(text) => handleInputChange("phoneNumber", text)}
+          placeholderTextColor="#999"
+          keyboardType="phone-pad"
+        />
+
+        <Text style={styles.label}>Location *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter location"
+          value={form.location}
+          onChangeText={(text) => handleInputChange("location", text)}
           placeholderTextColor="#999"
         />
 
-        <Text style={styles.label}>Zip Code *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter zip code"
-          value={form.zipCode}
-          onChangeText={(text) => handleInputChange("zipCode", text)}
-          placeholderTextColor="#999"
-        />
-
-        <Text style={styles.label}>State *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter state"
-          value={form.state}
-          onChangeText={(text) => handleInputChange("state", text)}
-          placeholderTextColor="#999"
-        />
-
-        <Text style={styles.label}>City *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter city"
-          value={form.city}
-          onChangeText={(text) => handleInputChange("city", text)}
-          placeholderTextColor="#999"
-        />
-
-        {/* Admin-specific fields */}
-        {form.accountType === UserAccountType.admin && (
+        {selectedType === UserAccountType.admin && (
           <>
-            <Text style={styles.sectionTitle}>Admin Information</Text>
             <Text style={styles.label}>Department Name *</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter department name"
-              value={form.departmentName || ""}
+              value={form.departmentName}
               onChangeText={(text) => handleInputChange("departmentName", text)}
               placeholderTextColor="#999"
             />
           </>
         )}
 
-        {/* Business-specific fields */}
-        {form.accountType === UserAccountType.business && (
+        {selectedType === UserAccountType.business && (
           <>
-            <Text style={styles.sectionTitle}>Business Information</Text>
             <Text style={styles.label}>Business Name *</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter business name"
-              value={form.businessName || ""}
+              value={form.businessName}
               onChangeText={(text) => handleInputChange("businessName", text)}
               placeholderTextColor="#999"
             />
             <Text style={styles.label}>Business License *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter business license number"
-              value={form.businessLicense || ""}
+              placeholder="Enter business license"
+              value={form.businessLicense}
               onChangeText={(text) =>
                 handleInputChange("businessLicense", text)
               }
               placeholderTextColor="#999"
             />
-            <Text style={styles.sectionTitle}>Business Location</Text>
-            <Text style={styles.label}>Business Street Address *</Text>
+            <Text style={styles.label}>Business Phone Number *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter business phone number"
+              value={form.businessPhoneNumber}
+              onChangeText={(text) =>
+                handleInputChange("businessPhoneNumber", text)
+              }
+              placeholderTextColor="#999"
+            />
+            <Text style={styles.label}>Business Address *</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter business address"
-              value={form.businessAddress || ""}
+              value={form.businessAddress}
               onChangeText={(text) =>
                 handleInputChange("businessAddress", text)
               }
               placeholderTextColor="#999"
             />
-            <Text style={styles.label}>Business City *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter business city"
-              value={form.businessCity || ""}
-              onChangeText={(text) => handleInputChange("businessCity", text)}
-              placeholderTextColor="#999"
-            />
-            <Text style={styles.label}>Business State *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter business state"
-              value={form.businessState || ""}
-              onChangeText={(text) => handleInputChange("businessState", text)}
-              placeholderTextColor="#999"
-            />
-
-            <Text style={styles.label}>Business Zip Code *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter business Zip Code"
-              value={form.businessZip || ""}
-              onChangeText={(text) => handleInputChange("businessZip", text)}
-              placeholderTextColor="#999"
-            />
           </>
         )}
 
-        {/* City Admin-specific fields */}
-        {form.accountType === UserAccountType.cityAdmin && (
+        {selectedType === UserAccountType.cityAdmin && (
           <>
-            <Text style={styles.sectionTitle}>City Admin Information</Text>
             <Text style={styles.label}>City Name *</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter city name"
-              value={form.cityName || ""}
+              value={form.cityName}
               onChangeText={(text) => handleInputChange("cityName", text)}
               placeholderTextColor="#999"
             />
-
             <Text style={styles.label}>Government ID *</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter government ID"
-              value={form.governmentId || ""}
+              value={form.governmentId}
               onChangeText={(text) => handleInputChange("governmentId", text)}
               placeholderTextColor="#999"
             />
           </>
         )}
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+        {!isFormValid() && (
+          <Text style={styles.helperText}>
+            All fields must be filled and password requirements must be met
+          </Text>
+        )}
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            !isFormValid() && styles.submitButtonDisabled,
+          ]}
+          onPress={handleSubmit}
+          disabled={!isFormValid()}
+        >
           <Text style={styles.submitButtonText}>Sign Up</Text>
         </TouchableOpacity>
-
         <View style={{ height: 20 }} />
       </ScrollView>
     </SafeAreaView>
@@ -489,44 +529,33 @@ export default function SignUpPage({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  backButton: {
-    color: "#0066cc",
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#111",
-  },
-  formContainer: {
+  backButton: { color: "#0066cc", fontWeight: "600", marginBottom: 8 },
+  title: { fontSize: 24, fontWeight: "700", color: "#111" },
+  buttonContainer: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111",
-    marginBottom: 6,
+  typeButton: {
+    backgroundColor: "#006400",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    marginVertical: 8,
+    width: "80%",
+    alignItems: "center",
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111",
-    marginTop: 20,
-    marginBottom: 12,
-  },
+  typeButtonText: { color: "#fff", fontWeight: "600", fontSize: 18 },
+  formContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 20 },
+  label: { fontSize: 14, fontWeight: "600", color: "#111", marginBottom: 6 },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -538,39 +567,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: "#f9f9f9",
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 6,
-    marginBottom: 12,
-    backgroundColor: "#f9f9f9",
-    overflow: "hidden",
-  },
-  picker: {
-    height: 50,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    width: "80%",
-    borderRadius: 8,
-    paddingVertical: 8,
-  },
-  modalItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: "#111",
-  },
   submitButton: {
     backgroundColor: "#111",
     paddingVertical: 14,
@@ -579,9 +575,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
   },
-  submitButtonText: {
-    color: "#fff",
+  submitButtonDisabled: {
+    backgroundColor: "#999",
+    opacity: 0.5,
+  },
+  submitButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  passwordRequirements: {
+    marginBottom: 12,
+    paddingLeft: 4,
+  },
+  requirementText: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+  },
+  requirementMet: {
+    color: "#006400",
     fontWeight: "600",
-    fontSize: 16,
+  },
+  helperText: {
+    fontSize: 13,
+    color: "#dc2626",
+    marginTop: 12,
+    textAlign: "center",
+    fontWeight: "500",
   },
 });

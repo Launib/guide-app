@@ -8,6 +8,7 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -27,6 +28,7 @@ export default function LoginPage({
     username: "",
     password: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -37,8 +39,9 @@ export default function LoginPage({
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
+
     // DEV shortcut: simulate successful login when running in development
-    if (typeof __DEV__ !== "undefined" && __DEV__) {
+    if (typeof __DEV__ !== "undefined" && __DEV__ && form.username === "dev") {
       const fakeToken = "dev-token";
       const fakeUser = {
         id: "dev-user",
@@ -52,18 +55,25 @@ export default function LoginPage({
       await AsyncStorage.setItem("userToken", fakeToken);
       await AsyncStorage.setItem("authUser", JSON.stringify(fakeUser));
       await AsyncStorage.setItem("username", form.username);
-      await AsyncStorage.setItem("userRole", "App Admin");
+      await AsyncStorage.setItem("userRole", "Admin");
       Alert.alert("Dev", "Simulated login as App Admin (dev mode).");
       onSuccess?.();
       return;
     }
+
     try {
+      setIsLoading(true);
       const payload = {
         email: form.username,
         password: form.password,
       };
 
-      const API_BASE = "http://localhost:5162/api/auth";
+      const API_BASE =
+        Platform.OS === "android"
+          ? "http://10.0.2.2:5162/api/auth"
+          : "http://localhost:5162/api/auth";
+
+      console.log("Attempting login for:", form.username);
 
       const resp = await fetch(`${API_BASE}/token`, {
         method: "POST",
@@ -71,15 +81,24 @@ export default function LoginPage({
         body: JSON.stringify(payload),
       });
 
+      console.log("Login response status:", resp.status);
+
       if (!resp.ok) {
         const txt = await resp.text();
         console.error("Login failed:", resp.status, txt);
-        Alert.alert("Error", "Invalid credentials");
+        Alert.alert(
+          "Error",
+          "Invalid credentials. Please check your email and password."
+        );
         return;
       }
 
       const data = await resp.json();
+      console.log("Login response data:", { ...data, token: "[REDACTED]" });
+
       const token = data.token;
+      const user = data.user;
+
       if (!token) {
         Alert.alert("Error", "Login failed: no token returned");
         return;
@@ -87,35 +106,46 @@ export default function LoginPage({
 
       // Save token
       await AsyncStorage.setItem("authToken", token);
+      await AsyncStorage.setItem("userToken", token);
 
-      // Fetch user profile using the token
-      const meResp = await fetch(`${API_BASE}/me`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (meResp.ok) {
-        const user = await meResp.json();
+      // Save user data
+      if (user) {
         await AsyncStorage.setItem("authUser", JSON.stringify(user));
-      } else {
-        console.warn("Failed to fetch /me after login", meResp.status);
+        await AsyncStorage.setItem("username", user.username || form.username);
+
+        // Save role
+        if (user.roles && user.roles.length > 0) {
+          await AsyncStorage.setItem("userRole", user.roles[0]);
+          console.log("Saved user role:", user.roles[0]);
+        }
+
+        // Save profile photo if available
+        if (user.profilePicture) {
+          const imageDataUri = `data:image/jpeg;base64,${user.profilePicture}`;
+          await AsyncStorage.setItem("userProfilePhoto", imageDataUri);
+        }
       }
 
+      console.log("Login successful, calling onSuccess");
       Alert.alert("Success", "Logged in successfully");
-
-      //needed to add this for the app admin view:
-      await AsyncStorage.setItem("userRole", "App Admin");
       onSuccess?.();
     } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Login failed. Please try again.");
+      console.error("Login error:", err);
+      Alert.alert(
+        "Error",
+        `Login failed: ${
+          err instanceof Error ? err.message : "Please try again."
+        }`
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}>
+        <TouchableOpacity onPress={onBack} disabled={isLoading}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Log In</Text>
@@ -125,13 +155,16 @@ export default function LoginPage({
         style={styles.formContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.label}>Username *</Text>
+        <Text style={styles.label}>Email *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter username"
+          placeholder="Enter email"
           value={form.username}
           onChangeText={(text) => handleInputChange("username", text)}
           placeholderTextColor="#999"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          editable={!isLoading}
         />
 
         <Text style={styles.label}>Password *</Text>
@@ -142,10 +175,20 @@ export default function LoginPage({
           onChangeText={(text) => handleInputChange("password", text)}
           secureTextEntry
           placeholderTextColor="#999"
+          editable={!isLoading}
         />
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Log In</Text>
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            isLoading && styles.submitButtonDisabled,
+          ]}
+          onPress={handleSubmit}
+          disabled={isLoading}
+        >
+          <Text style={styles.submitButtonText}>
+            {isLoading ? "Logging in..." : "Log In"}
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: 20 }} />
@@ -186,13 +229,6 @@ const styles = StyleSheet.create({
     color: "#111",
     marginBottom: 6,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111",
-    marginTop: 20,
-    marginBottom: 12,
-  },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -211,6 +247,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#9ca3af",
   },
   submitButtonText: {
     color: "#fff",

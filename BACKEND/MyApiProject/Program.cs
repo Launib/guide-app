@@ -55,6 +55,17 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddControllers();
 
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Seed roles (and optional admin user)
@@ -67,6 +78,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseAuthentication();
+app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.MapControllers();

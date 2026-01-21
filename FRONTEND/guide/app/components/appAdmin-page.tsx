@@ -6,6 +6,7 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  Platform,
 } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -29,7 +30,31 @@ function AppAdminDashboard() {
 
 // The style for the AppAdmin Settings tab on the page
 function AppAdminSettings() {
-  return <AppAdminSettingsPage styleOfThePage={styleOfThePage} />;
+  const router = useRouter();
+
+  const handleAccountDeleted = async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        "authToken",
+        "userToken",
+        "authUser",
+        "username",
+        "userRole",
+        "userProfilePhoto",
+      ]);
+      await AsyncStorage.removeItem("hasSeenOnboarding");
+      router.replace("/");
+    } catch (e) {
+      console.error("Navigation error after account deletion:", e);
+    }
+  };
+
+  return (
+    <AppAdminSettingsPage
+      styleOfThePage={styleOfThePage}
+      onAccountDeleted={handleAccountDeleted}
+    />
+  );
 }
 
 // Info used to create the nav bar
@@ -60,32 +85,40 @@ export default function AdminView({ userName, UserRole }: inputsForAppAdmin) {
   }, []);
 
   const handleLogout = async () => {
-    Alert.alert("Logout", "Are you sure you want to log out?", [
-      { text: "Cancel", onPress: () => {} },
-      {
-        text: "Logout",
-        onPress: async () => {
-          try {
-            await AsyncStorage.multiRemove([
-              "authToken",
-              "userToken",
-              "authUser",
-              "username",
-              "userRole",
-              "userProfilePhoto",
-            ]);
-            // Also clear onboarding flag to show onboarding again
-            await AsyncStorage.removeItem("hasSeenOnboarding");
-            // Force hard reload by using navigation stack reset
-            // This will trigger _layout.tsx to re-evaluate authentication state
-            router.replace("/");
-          } catch (e) {
-            console.error("Logout error:", e);
-            Alert.alert("Error", "Failed to log out.");
-          }
+    const performLogout = async () => {
+      try {
+        await AsyncStorage.multiRemove([
+          "authToken",
+          "userToken",
+          "authUser",
+          "username",
+          "userRole",
+          "userProfilePhoto",
+        ]);
+        // Also clear onboarding flag to show onboarding again
+        await AsyncStorage.removeItem("hasSeenOnboarding");
+        // Force hard reload by using navigation stack reset
+        // This will trigger _layout.tsx to re-evaluate authentication state
+        router.replace("/");
+      } catch (e) {
+        console.error("Logout error:", e);
+        Alert.alert("Error", "Failed to log out.");
+      }
+    };
+
+    if (Platform.OS === "web") {
+      // On web, logout directly without alert
+      performLogout();
+    } else {
+      // On mobile, show confirmation alert
+      Alert.alert("Logout", "Are you sure you want to log out?", [
+        { text: "Cancel", onPress: () => {} },
+        {
+          text: "Logout",
+          onPress: performLogout,
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   return (
@@ -116,8 +149,9 @@ export default function AdminView({ userName, UserRole }: inputsForAppAdmin) {
       <AppAdminTabs.Navigator
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: "#2563eb",
-          tabBarInactiveTintColor: "#6b7280",
+          tabBarActiveTintColor: "#fff",
+          tabBarInactiveTintColor: "#fff",
+          tabBarStyle: { backgroundColor: "#006400" },
         }}
       >
         <AppAdminTabs.Screen

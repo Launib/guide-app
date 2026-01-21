@@ -59,6 +59,7 @@ namespace MyApiProject.Models
         public string? UserFullName { get; set; }
         public string? Username { get; set; }
         public string? Location {get; set;}
+        public string? Address { get; set; }
         public string? AccountType { get; set; }
         public string? UserEmail {get; set;} 
         public string? UserPhoneNumber {get; set;}
@@ -112,5 +113,6 @@ namespace MyApiProject.Models
         public string? SubManagerId { get; set; } // Reference to SubManagerUser Id
         public SubManagerUser? SubManager { get; set; }
         public byte[]? BusinessProfilePicture { get; set; }
+        public string? Status { get; set; } = "Pending"; // Pending, Approved, Denied
     }
 }
