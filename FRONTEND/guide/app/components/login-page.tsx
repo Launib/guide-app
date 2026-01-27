@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   View,
   Text,
@@ -23,6 +24,8 @@ export default function LoginPage({
   onBack: () => void;
   onSuccess?: () => void;
 }) {
+  const insets = useSafeAreaInsets();
+
   const [form, setForm] = useState<LoginFormData>({
     username: "",
     password: "",
@@ -37,6 +40,7 @@ export default function LoginPage({
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
+
     try {
       const payload = {
         email: form.username,
@@ -65,10 +69,8 @@ export default function LoginPage({
         return;
       }
 
-      // Save token
       await AsyncStorage.setItem("authToken", token);
 
-      // Fetch user profile using the token
       const meResp = await fetch(`${API_BASE}/me`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
@@ -83,8 +85,7 @@ export default function LoginPage({
 
       Alert.alert("Success", "Logged in successfully");
 
-      //needed to add this for the app admin view:
-      await AsyncStorage.setItem("userRole","App Admin");
+      await AsyncStorage.setItem("userRole", "App Admin");
       onSuccess?.();
     } catch (err) {
       console.error(err);
@@ -94,17 +95,14 @@ export default function LoginPage({
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Log In</Text>
       </View>
 
-      <ScrollView
-        style={styles.formContainer}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
         <Text style={styles.label}>Username *</Text>
         <TextInput
           style={styles.input}
