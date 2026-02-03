@@ -35,8 +35,14 @@ public class AuthController : ControllerBase
             if (string.IsNullOrWhiteSpace(dto.UserEmail) || string.IsNullOrWhiteSpace(dto.Password))
                 return BadRequest("Email and password are required.");
 
+            // Check for duplicate email
             if (await _userManager.FindByEmailAsync(dto.UserEmail) != null)
                 return Conflict("Email already in use.");
+
+            // Check for duplicate username
+            var username = string.IsNullOrWhiteSpace(dto.Username) ? dto.UserEmail : dto.Username;
+            if (await _userManager.FindByNameAsync(username) != null)
+                return Conflict("Username already in use.");
 
         ApplicationUser user;
         if (dto.AccountType == "Admin")
@@ -186,8 +192,26 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Token([FromBody] LoginDto dto)
     {
-        var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null) return Unauthorized();
+        Console.WriteLine($"Login attempt with identifier: {dto.Email}");
+
+        // Try to find user by username first, then by email for backwards compatibility
+        var user = await _userManager.FindByNameAsync(dto.Email);
+
+        if (user == null)
+        {
+            Console.WriteLine($"User not found by username '{dto.Email}', trying email lookup");
+            user = await _userManager.FindByEmailAsync(dto.Email);
+        }
+        else
+        {
+            Console.WriteLine($"User found by username: {user.Id}, UserName: {user.UserName}");
+        }
+
+        if (user == null)
+        {
+            Console.WriteLine($"User not found by username or email: {dto.Email}");
+            return Unauthorized();
+        }
 
         if (!await _userManager.CheckPasswordAsync(user, dto.Password)) return Unauthorized();
 
@@ -499,6 +523,94 @@ public class AuthController : ControllerBase
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+
+    [HttpPost("business-login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> BusinessLogin([FromBody] BusinessLoginDto dto)
+    {
+        try
+        {
+            Console.WriteLine($"Business login attempt for username: {dto.Username}");
+
+            // Debug: Check what users exist in the database
+            var allUsers = await _context.Users.Select(u => new { u.UserName, u.NormalizedUserName, u.Id }).ToListAsync();
+            Console.WriteLine($"All users in database: {string.Join(", ", allUsers.Select(u => $"{u.UserName} (Normalized: {u.NormalizedUserName}, ID: {u.Id})"))}");
+
+            // Find BusinessUser by username
+            var businessUser = await _userManager.FindByNameAsync(dto.Username);
+            if (businessUser == null)
+            {
+                Console.WriteLine($"BusinessUser not found with username: {dto.Username}");
+                Console.WriteLine($"Normalized search term would be: {dto.Username.ToUpperInvariant()}");
+                return Unauthorized("Invalid credentials");
+            }
+
+            // Check if this is actually a BusinessUser
+            if (businessUser is not BusinessUser)
+            {
+                Console.WriteLine($"User {dto.Username} is not a BusinessUser");
+                return Unauthorized("Invalid credentials");
+            }
+
+            // Verify password using UserManager
+            var passwordValid = await _userManager.CheckPasswordAsync(businessUser, dto.Password);
+            if (!passwordValid)
+            {
+                Console.WriteLine($"Invalid password for business username: {dto.Username}");
+                return Unauthorized("Invalid credentials");
+            }
+
+            Console.WriteLine($"Password verified for BusinessUser {businessUser.Id}");
+
+            // Get the associated business to verify it's approved
+            var business = await _context.Businesses
+                .FirstOrDefaultAsync(b => b.BusinessUsername == dto.Username);
+
+            if (business != null && business.Status != "Approved")
+            {
+                Console.WriteLine($"Business {business.Id} is not approved. Status: {business.Status}");
+                return Unauthorized("Business is not approved");
+            }
+
+            // Generate token and return
+            var roles = await _userManager.GetRolesAsync(businessUser);
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, businessUser.Id),
+                new Claim(ClaimTypes.Name, businessUser.UserName ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Email, businessUser.Email ?? string.Empty)
+            };
+            claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? ""));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(7),
+                signingCredentials: creds
+            );
+
+            var written = new JwtSecurityTokenHandler().WriteToken(token);
+            var userResponse = await GetUserResponse(businessUser, roles);
+
+            Console.WriteLine($"Business login successful for {dto.Username}, returning token");
+
+            return Ok(new
+            {
+                token = written,
+                user = userResponse
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in BusinessLogin endpoint: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 }
 
 public record LoginDto(string Email, string Password);
@@ -543,3 +655,5 @@ public record CreateBusinessRequestDto(
 );
 
 public record ChangePasswordDto(string CurrentPassword, string NewPassword);
+
+public record BusinessLoginDto(string Username, string Password);

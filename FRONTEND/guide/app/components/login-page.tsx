@@ -34,6 +34,9 @@ export default function LoginPage({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Check if form is valid (all fields filled)
+  const isFormValid = form.username.trim() !== "" && form.password.trim() !== "";
+
   const handleSubmit = async () => {
     if (!form.username || !form.password) {
       Alert.alert("Error", "Please fill in all required fields.");
@@ -88,7 +91,7 @@ export default function LoginPage({
         console.error("Login failed:", resp.status, txt);
         Alert.alert(
           "Error",
-          "Invalid credentials. Please check your email and password."
+          "Invalid credentials. Please check your username and password."
         );
         return;
       }
@@ -155,15 +158,14 @@ export default function LoginPage({
         style={styles.formContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.label}>Email *</Text>
+        <Text style={styles.label}>Username *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter email"
+          placeholder="Enter username"
           value={form.username}
           onChangeText={(text) => handleInputChange("username", text)}
           placeholderTextColor="#999"
           autoCapitalize="none"
-          keyboardType="email-address"
           editable={!isLoading}
         />
 
@@ -181,10 +183,10 @@ export default function LoginPage({
         <TouchableOpacity
           style={[
             styles.submitButton,
-            isLoading && styles.submitButtonDisabled,
+            (!isFormValid || isLoading) && styles.submitButtonDisabled,
           ]}
           onPress={handleSubmit}
-          disabled={isLoading}
+          disabled={!isFormValid || isLoading}
         >
           <Text style={styles.submitButtonText}>
             {isLoading ? "Logging in..." : "Log In"}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,11 @@ import {
   TextStyle,
   TouchableOpacity,
   StyleSheet,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface appAdminDashBoardProps {
   styleOfThePage: {
@@ -28,11 +31,47 @@ export default function AppAdminDashboardPage({
 }: appAdminDashBoardProps) {
   const navigation = useNavigation();
 
-  // Mock counts (replace with real data later)
-  const businessRequests = 2;
-  const feedbackCount = 4;
+  const [businessRequests, setBusinessRequests] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const feedbackCount = 4; // Keep this as mock for now
 
   const mockActivity = [12, 24, 18, 30, 22, 16, 28, 20, 26]; // hourly-ish mock data
+
+  useEffect(() => {
+    loadBusinessRequestCount();
+    // Refresh count every 10 seconds
+    const interval = setInterval(loadBusinessRequestCount, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadBusinessRequestCount = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) return;
+
+      const API_BASE =
+        Platform.OS === "android"
+          ? "http://10.0.2.2:5162/api/business"
+          : "http://localhost:5162/api/business";
+
+      const resp = await fetch(`${API_BASE}/pending`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        setBusinessRequests(data.length);
+      }
+    } catch (err) {
+      console.error("Error loading business request count:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styleOfThePage.screen}>
@@ -43,10 +82,14 @@ export default function AppAdminDashboardPage({
       <View style={localStyles.cardRow}>
         <TouchableOpacity
           style={localStyles.card}
-          onPress={() => navigation.navigate("UserManagement" as never)}
+          onPress={() => navigation.navigate("UserManagement" as never, { initialTab: "businessRequests" } as never)}
         >
           <Text style={localStyles.cardTitle}>Business Requests</Text>
-          <Text style={localStyles.cardCount}>{businessRequests}</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#006400" />
+          ) : (
+            <Text style={localStyles.cardCount}>{businessRequests}</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity

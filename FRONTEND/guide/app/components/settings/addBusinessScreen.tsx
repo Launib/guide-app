@@ -15,22 +15,33 @@ import { Ionicons } from "@expo/vector-icons";
 interface AddBusinessScreenProps {
   onBack: () => void;
   onSuccess?: () => void;
+  onGoToBusinessProfiles?: () => void;
 }
 
 export default function AddBusinessScreen({
   onBack,
   onSuccess,
+  onGoToBusinessProfiles,
 }: AddBusinessScreenProps) {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check if all required fields are filled
+  const isFormValid =
+    name.trim() !== "" &&
+    email.trim() !== "" &&
+    licenseNumber.trim() !== "" &&
+    phoneNumber.trim() !== "" &&
+    address.trim() !== "";
+
   const handleAddBusiness = async () => {
-    if (!name || !licenseNumber || !phoneNumber || !address) {
-      Alert.alert("Error", "Please fill in all fields.");
+    if (!name || !email || !licenseNumber || !phoneNumber || !address) {
+      Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
 
@@ -53,6 +64,7 @@ export default function AddBusinessScreen({
 
       console.log("Creating business with data:", {
         name,
+        email,
         licenseNumber,
         phoneNumber,
         address,
@@ -66,6 +78,7 @@ export default function AddBusinessScreen({
         },
         body: JSON.stringify({
           name,
+          email,
           licenseNumber,
           phoneNumber,
           address,
@@ -123,8 +136,11 @@ export default function AddBusinessScreen({
             <Text style={styles.statusText}>Status: Pending</Text>
           </View>
 
-          <TouchableOpacity style={styles.doneButton} onPress={onBack}>
-            <Text style={styles.doneButtonText}>Done</Text>
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={onGoToBusinessProfiles || onBack}
+          >
+            <Text style={styles.doneButtonText}>Go to Business Profiles</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -136,7 +152,7 @@ export default function AddBusinessScreen({
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#333" />
-          <Text style={styles.backText}>Settings</Text>
+          <Text style={styles.backText}>Profile</Text>
         </TouchableOpacity>
       </View>
 
@@ -154,6 +170,19 @@ export default function AddBusinessScreen({
           value={name}
           onChangeText={setName}
           placeholder="Enter business name"
+          editable={!isLoading}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Business Email *</Text>
+        <TextInput
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Enter business email"
+          keyboardType="email-address"
+          autoCapitalize="none"
           editable={!isLoading}
         />
       </View>
@@ -195,9 +224,12 @@ export default function AddBusinessScreen({
       </View>
 
       <TouchableOpacity
-        style={[styles.addButton, isLoading && styles.addButtonDisabled]}
+        style={[
+          styles.addButton,
+          (!isFormValid || isLoading) && styles.addButtonDisabled,
+        ]}
         onPress={handleAddBusiness}
-        disabled={isLoading}
+        disabled={!isFormValid || isLoading}
       >
         <Text style={styles.addButtonText}>
           {isLoading ? "Adding Business..." : "Add Business"}

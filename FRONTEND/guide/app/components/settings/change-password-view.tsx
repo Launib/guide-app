@@ -87,7 +87,7 @@ export default function ChangePasswordView({ onBack }: ChangePasswordViewProps) 
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#333" />
-          <Text style={styles.backText}>Settings</Text>
+          <Text style={styles.backText}>Profile</Text>
         </TouchableOpacity>
       </View>
 

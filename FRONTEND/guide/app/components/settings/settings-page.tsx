@@ -18,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import AccountView from "./account-view";
 import ChangePasswordView from "./change-password-view";
 import AddBusinessScreen from "./addBusinessScreen";
+import BusinessProfilesView from "./business-profiles-view";
 
 interface SettingsPageProps {
   styleOfThePage: {
@@ -37,7 +38,7 @@ export default function SettingsPage({
   onAccountDeleted,
 }: SettingsPageProps) {
   const [view, setView] = useState<
-    "settings" | "account" | "changePassword" | "addBusiness"
+    "settings" | "account" | "changePassword" | "addBusiness" | "businessProfiles"
   >("settings");
 
   // User data states
@@ -429,9 +430,19 @@ export default function SettingsPage({
       <AddBusinessScreen
         onBack={() => setView("settings")}
         onSuccess={() => {
-          setView("settings");
-          loadUserData();
+          // Keep user on the same screen to see the pending status
         }}
+        onGoToBusinessProfiles={() => setView("businessProfiles")}
+      />
+    );
+  }
+
+  // Business profiles view
+  if (view === "businessProfiles") {
+    return (
+      <BusinessProfilesView
+        key={Date.now()}
+        onBack={() => setView("settings")}
       />
     );
   }
@@ -441,7 +452,7 @@ export default function SettingsPage({
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <Text style={[styleOfThePage.text, { fontSize: 18, marginBottom: 12 }]}>
-          Settings
+          Profile
         </Text>
 
         <TouchableOpacity style={styles.row} onPress={() => setView("account")}>
@@ -462,6 +473,14 @@ export default function SettingsPage({
           onPress={() => setView("addBusiness")}
         >
           <Text style={styles.rowLabel}>Add a Business</Text>
+          <Ionicons name="chevron-forward" size={20} color="#666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => setView("businessProfiles")}
+        >
+          <Text style={styles.rowLabel}>Business Profiles</Text>
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
 

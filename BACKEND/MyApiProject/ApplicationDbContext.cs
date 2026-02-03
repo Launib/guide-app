@@ -105,6 +105,7 @@ namespace MyApiProject.Models
     {
         public int Id { get; set; }
         public string? Name { get; set; }
+        public string? Email { get; set; }
         public string? LicenseNumber { get; set; }
         public string? PhoneNumber { get; set; }
         public string? Address { get; set; }
@@ -114,5 +115,8 @@ namespace MyApiProject.Models
         public SubManagerUser? SubManager { get; set; }
         public byte[]? BusinessProfilePicture { get; set; }
         public string? Status { get; set; } = "Pending"; // Pending, Approved, Denied
+        public string? BusinessUsername { get; set; } // Username for business login
+        public string? BusinessPasswordHash { get; set; } // Hashed password for business login
+        public bool HasAccount { get; set; } = false; // Whether business account has been set up
     }
 }

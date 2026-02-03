@@ -239,7 +239,21 @@ export default function SignUpPage({
         console.log("Signup error - Status:", resp.status, "Message:", txt);
 
         if (resp.status === 409) {
-          Alert.alert("Email Already Registered", "This email address is already in use. Please use a different email or log in to your existing account.");
+          // Check if it's email or username conflict
+          if (txt.toLowerCase().includes("email")) {
+            Alert.alert(
+              "Email Already Registered",
+              "This email address is already in use. Please use a different email or log in to your existing account."
+            );
+          } else if (txt.toLowerCase().includes("username")) {
+            Alert.alert(
+              "Username Already Taken",
+              "This username is already in use. Please choose a different username."
+            );
+          } else {
+            // Generic conflict message
+            Alert.alert("Already Registered", txt);
+          }
         } else {
           Alert.alert("Error", txt || `Sign up failed: ${resp.status}`);
         }
