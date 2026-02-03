@@ -12,7 +12,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import AppAdminDashboardPage from "./appAdmin/appAdminDashBoard";
-import AppAdminSettingsPage from "./appAdmin/appAdminSettingsPage";
+import SettingsPage from "./settings/settings-page";
 import UserManagementPage from "./appAdmin/userManagementPage";
 import FeedbackPage from "./appAdmin/feedbackPage";
 import { Ionicons } from "@expo/vector-icons";
@@ -50,7 +50,7 @@ function AppAdminSettings() {
   };
 
   return (
-    <AppAdminSettingsPage
+    <SettingsPage
       styleOfThePage={styleOfThePage}
       onAccountDeleted={handleAccountDeleted}
     />
@@ -190,12 +190,12 @@ export default function AdminView({ userName, UserRole }: inputsForAppAdmin) {
         />
 
         <AppAdminTabs.Screen
-          name="Settings"
+          name="Profile"
           component={AppAdminSettings}
           options={{
-            title: "Settings",
+            title: "Profile",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="settings-outline" size={size} color={color} />
+              <Ionicons name="person-outline" size={size} color={color} />
             ),
           }}
         />

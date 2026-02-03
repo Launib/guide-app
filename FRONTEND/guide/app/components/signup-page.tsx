@@ -11,6 +11,7 @@ import {
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { formatPhoneNumber } from "../utils/phoneFormatter";
 
 enum UserAccountType {
   admin = "Admin",
@@ -239,7 +240,21 @@ export default function SignUpPage({
         console.log("Signup error - Status:", resp.status, "Message:", txt);
 
         if (resp.status === 409) {
-          Alert.alert("Email Already Registered", "This email address is already in use. Please use a different email or log in to your existing account.");
+          // Check if it's email or username conflict
+          if (txt.toLowerCase().includes("email")) {
+            Alert.alert(
+              "Email Already Registered",
+              "This email address is already in use. Please use a different email or log in to your existing account."
+            );
+          } else if (txt.toLowerCase().includes("username")) {
+            Alert.alert(
+              "Username Already Taken",
+              "This username is already in use. Please choose a different username."
+            );
+          } else {
+            // Generic conflict message
+            Alert.alert("Already Registered", txt);
+          }
         } else {
           Alert.alert("Error", txt || `Sign up failed: ${resp.status}`);
         }
@@ -416,7 +431,7 @@ export default function SignUpPage({
           style={styles.input}
           placeholder="Enter phone number"
           value={form.phoneNumber}
-          onChangeText={(text) => handleInputChange("phoneNumber", text)}
+          onChangeText={(text) => handleInputChange("phoneNumber", formatPhoneNumber(text))}
           placeholderTextColor="#999"
           keyboardType="phone-pad"
         />
@@ -469,9 +484,10 @@ export default function SignUpPage({
               placeholder="Enter business phone number"
               value={form.businessPhoneNumber}
               onChangeText={(text) =>
-                handleInputChange("businessPhoneNumber", text)
+                handleInputChange("businessPhoneNumber", formatPhoneNumber(text))
               }
               placeholderTextColor="#999"
+              keyboardType="phone-pad"
             />
             <Text style={styles.label}>Business Address *</Text>
             <TextInput

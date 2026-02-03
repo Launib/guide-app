@@ -7,6 +7,10 @@ import AuthPage from "./components/auth-page";
 
 //new:
 import AdminView from "./components/appAdmin-page";
+import BusinessPage from "./components/business-page";
+import CityAdminPage from "./components/cityAdmin-page";
+import RegularUserPage from "./components/regularUser-page";
+import SubManagerPage from "./components/subManager-page";
 
 export default function RootLayout() {
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
@@ -84,11 +88,28 @@ export default function RootLayout() {
     );
   }
 
-  // Render admin view when role contains 'admin' and we have a username
+  // Render appropriate view based on user role
   if (userRole && username) {
     const normalized = (userRole || "").toString().toLowerCase();
-    if (normalized.includes("admin")) {
+
+    if (normalized.includes("admin") && !normalized.includes("city")) {
       return <AdminView userName={username} UserRole={userRole} />;
+    }
+
+    if (normalized.includes("business")) {
+      return <BusinessPage userName={username} UserRole={userRole} />;
+    }
+
+    if (normalized.includes("cityadmin")) {
+      return <CityAdminPage userName={username} UserRole={userRole} />;
+    }
+
+    if (normalized.includes("regularuser")) {
+      return <RegularUserPage userName={username} UserRole={userRole} />;
+    }
+
+    if (normalized.includes("submanager")) {
+      return <SubManagerPage userName={username} UserRole={userRole} />;
     }
   }
 

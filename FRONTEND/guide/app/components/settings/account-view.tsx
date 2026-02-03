@@ -10,6 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { formatPhoneNumber } from "../../utils/phoneFormatter";
 
 interface AccountViewProps {
   username: string;
@@ -74,7 +75,7 @@ export default function AccountView({
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#333" />
-          <Text style={styles.backText}>Settings</Text>
+          <Text style={styles.backText}>Profile</Text>
         </TouchableOpacity>
       </View>
 
@@ -158,7 +159,7 @@ export default function AccountView({
           <TextInput
             style={styles.input}
             value={phoneNumber}
-            onChangeText={setPhoneNumber}
+            onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
             placeholder="Enter phone number"
             keyboardType="phone-pad"
           />
