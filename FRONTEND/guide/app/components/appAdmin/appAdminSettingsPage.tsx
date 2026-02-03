@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AddBusinessScreen from "./addBusinessScreen";
+import { formatPhoneNumber } from "../../utils/phoneFormatter";
 
 interface appAdminSettingsProps {
   styleOfThePage: {
@@ -430,7 +431,7 @@ export default function AppAdminSettingsPage({
             <TextInput
               style={styles.input}
               value={phoneNumber}
-              onChangeText={setPhoneNumber}
+              onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
               placeholder="Enter phone number"
               keyboardType="phone-pad"
             />

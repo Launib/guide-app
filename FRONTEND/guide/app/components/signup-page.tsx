@@ -11,6 +11,7 @@ import {
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { formatPhoneNumber } from "../utils/phoneFormatter";
 
 enum UserAccountType {
   admin = "Admin",
@@ -430,7 +431,7 @@ export default function SignUpPage({
           style={styles.input}
           placeholder="Enter phone number"
           value={form.phoneNumber}
-          onChangeText={(text) => handleInputChange("phoneNumber", text)}
+          onChangeText={(text) => handleInputChange("phoneNumber", formatPhoneNumber(text))}
           placeholderTextColor="#999"
           keyboardType="phone-pad"
         />
@@ -483,9 +484,10 @@ export default function SignUpPage({
               placeholder="Enter business phone number"
               value={form.businessPhoneNumber}
               onChangeText={(text) =>
-                handleInputChange("businessPhoneNumber", text)
+                handleInputChange("businessPhoneNumber", formatPhoneNumber(text))
               }
               placeholderTextColor="#999"
+              keyboardType="phone-pad"
             />
             <Text style={styles.label}>Business Address *</Text>
             <TextInput

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { formatPhoneNumber } from "../../utils/phoneFormatter";
 
 interface AddBusinessScreenProps {
   onBack: () => void;
@@ -203,7 +204,7 @@ export default function AddBusinessScreen({
         <TextInput
           style={styles.input}
           value={phoneNumber}
-          onChangeText={setPhoneNumber}
+          onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
           placeholder="Enter phone number"
           keyboardType="phone-pad"
           editable={!isLoading}
