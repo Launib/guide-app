@@ -19,6 +19,8 @@ export default function BusinessPage({ onBack }: { onBack: () => void }) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<TabKey>("info");
 
+  const isBusinessUser = true;
+
   const business = useMemo(
     () => ({
       name: "The Coffee House",
@@ -70,12 +72,20 @@ export default function BusinessPage({ onBack }: { onBack: () => void }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.infoRow}>
           <Image source={{ uri: business.logo }} style={styles.logo} />
-          <View>
+
+          <View style={{ flex: 1 }}>
             <Text style={styles.name}>{business.name}</Text>
             <Text style={styles.sub}>{business.category}</Text>
             <Text style={styles.sub}>{business.city}</Text>
           </View>
+
+          {isBusinessUser && (
+            <TouchableOpacity style={styles.editBtn} onPress={() => { }}>
+              <Text style={styles.editBtnText}>Edit</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
 
         <Image source={{ uri: business.banner }} style={styles.banner} />
 
@@ -164,6 +174,7 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     gap: 12,
+    paddingHorizontal: 16,
     padding: 16,
     alignItems: "center",
   },
@@ -181,6 +192,19 @@ const styles = StyleSheet.create({
     height: 180,
     marginHorizontal: 16,
     borderRadius: 14,
+  },
+
+  editBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: "#111",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+
+  editBtnText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 
   about: {
